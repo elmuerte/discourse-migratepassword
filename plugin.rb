@@ -1,8 +1,8 @@
 # name: discourse-migratepassword
 # about: enable alternative password hashes
-# version: 0.8
-# authors: Jens Maier and michael@communiteq.com
-# url: https://github.com/discoursehosting/discourse-migratepassword
+# version: 0.9
+# authors: Jens Maier and michael@communiteq.com and Michiel Hendriks
+# url: https://github.com/elmuerte/discourse-migratepassword
 
 # Usage:
 # When migrating, store a custom field with the user containing the crypted password
@@ -22,7 +22,7 @@
 #This will be applied at runtime, as authentication is attempted.  It does not apply at migration time.
 
 
-gem 'bcrypt', '3.1.3'
+gem 'bcrypt', '3.1.18'
 gem 'unix-crypt', '1.3.0', :require_name => 'unix_crypt'
 
 gem 'ffi', '1.15.5', require: false
@@ -227,22 +227,23 @@ after_initialize do
         end
 
         def self.check_all(password, crypted_pass)
-            AlternativePassword::check_vbulletin(password, crypted_pass) ||
-            AlternativePassword::check_vbulletin5(password, crypted_pass) ||
-            AlternativePassword::check_ipb(password, crypted_pass) ||
-            AlternativePassword::check_smf(password, crypted_pass) ||
-            AlternativePassword::check_md5(password, crypted_pass) ||
-            AlternativePassword::check_bcrypt(password, crypted_pass) ||
-            AlternativePassword::check_sha256(password, crypted_pass) ||
-            AlternativePassword::check_wordpress(password, crypted_pass) ||
-            AlternativePassword::check_wbblite(password, crypted_pass) ||
-            AlternativePassword::check_unixcrypt(password, crypted_pass) ||
-            AlternativePassword::check_joomla_md5(password, crypted_pass) ||
-            AlternativePassword::check_joomla_3_2(password, crypted_pass) ||
-            AlternativePassword::check_q2a(password, crypted_pass) ||
-            AlternativePassword::check_drupal7(password, crypted_pass) ||
-            AlternativePassword::check_devise(password, crypted_pass) ||
-            AlternativePassword::check_argon(password, crypted_pass)
+            AlternativePassword::check_mbn(password, crypted_pass)
+            #AlternativePassword::check_vbulletin(password, crypted_pass) ||
+            #AlternativePassword::check_vbulletin5(password, crypted_pass) ||
+            #AlternativePassword::check_ipb(password, crypted_pass) ||
+            #AlternativePassword::check_smf(password, crypted_pass) ||
+            #AlternativePassword::check_md5(password, crypted_pass) ||
+            #AlternativePassword::check_bcrypt(password, crypted_pass) ||
+            #AlternativePassword::check_sha256(password, crypted_pass) ||
+            #AlternativePassword::check_wordpress(password, crypted_pass) ||
+            #AlternativePassword::check_wbblite(password, crypted_pass) ||
+            #AlternativePassword::check_unixcrypt(password, crypted_pass) ||
+            #AlternativePassword::check_joomla_md5(password, crypted_pass) ||
+            #AlternativePassword::check_joomla_3_2(password, crypted_pass) ||
+            #AlternativePassword::check_q2a(password, crypted_pass) ||
+            #AlternativePassword::check_drupal7(password, crypted_pass) ||
+            #AlternativePassword::check_devise(password, crypted_pass) ||
+            #AlternativePassword::check_argon(password, crypted_pass)
         end
 
         def self.check_argon(password, crypted_pass)
@@ -267,6 +268,21 @@ after_initialize do
             begin
               # allow salt:hash as well as hash
               BCrypt::Password.new(crypted_pass.rpartition(':').last) == password
+            rescue
+              false
+            end
+        end
+
+        def self.check_mbn(password, crypted_pass)
+            hash, salt = crypted_pass.split(':', 2)
+            hash.gsub! /^\$2y\$/, '$2a$'
+            pass = Digest::MD5.hexdigest(password) + salt;
+            if hash.start_with?('$v')
+              hash.gsub! /^\$v.\$/, '$2a$'
+              pass = Digest::MD5.hexdigest(Digest::MD5.hexdigest(password) + salt);
+            end
+            begin
+              BCrypt::Password.new(hash) == pass
             rescue
               false
             end
