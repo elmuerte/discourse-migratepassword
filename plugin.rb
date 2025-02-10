@@ -25,7 +25,7 @@
 gem 'bcrypt', '3.1.18'
 gem 'unix-crypt', '1.3.0', :require_name => 'unix_crypt'
 
-gem 'ffi', '1.17.0', require: false
+gem 'ffi', '1.17.1', require: false
 gem 'ffi-compiler', '1.0.1', require: false
 gem 'argon2', '2.3.0'
 
